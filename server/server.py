@@ -71,9 +71,17 @@ class Server:
       pass
 
   def tcp_con_sending(self, con, client_tcp):
-    with open('file', 'wb') as f:
-      while True:
-        print(f'Recebendo arquivo de {client_tcp}...')
+
+    filename = ''
+    while True:# socket tcp recebe primeiramente o nome do arquivo
+      c = con.recv(1).decode()
+      if c == '\n':
+        break   
+      filename += c
+
+    with open(filename, 'wb') as f:# cria arquivo com esse nome
+      print(f'Recebendo arquivo de {client_tcp}...')
+      while True:# comeca a receber o arquivo
         data = con.recv(1024)
         if not data:
             break

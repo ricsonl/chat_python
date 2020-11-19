@@ -6,8 +6,7 @@ class Client:
     while True:
       self.username = input('Nome de usuário: ') # nome do usuario
       if self.username: break #verifica se é diferente de ''
-    self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)# criacao do socket p/ troca de mensagens
-    self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# criacao do socket p/ envio de arquivos
+    
     self.online = False
 
     self.cmd = {# dicionario para os possíveis comandos do usuario
@@ -27,6 +26,7 @@ class Client:
         print(wds[1])
 
   def enter_chat(self, host, port):
+    self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)# criacao do socket p/ troca de mensagens
     self.online = True
     self.dest = (host, port)# seta ip e porta de destino
     msg = f'USER:{self.username}'.encode()
@@ -45,30 +45,22 @@ class Client:
         wds = msg.split()# separando o comando do nome do arquivo
         if len(wds) > 1:
           with open(wds[1], 'rb') as f:# abre o arquivo em binario
-            self.tcp_socket.connect(self.dest)
-
-            msg = f'FILE:{wds[1]}'.encode()# converte para o padrao do protocolo utilizado
-            self.udp_socket.sendto(msg, self.dest)# envia mensagem udp
-
-            l = f.read(1024)# le parte do arquivo
-            while (l):# ate acabar o arquivo
-              self.tcp_socket.send(l)# envia
-              l = f.read(1024)
-
-            self.tcp_socket.close()
+            self.send_file(wds[1], f)
+            msg = f'FILE:{wds[1]}'.encode()# monta mensagem de controle
+            self.udp_socket.sendto(msg, self.dest)# envia mensagem udp no formato FILE:<file>
 
       elif command == self.cmd['getfile']:# caso o usuario tenha digitado '/get {...}'
         wds = msg.split()# separando o comando do nome do arquivo
         if len(wds) > 1:
-          msg = f'GET:{wds[1]}'.encode()# converte para o padrao do protocolo utilizado
+          msg = f'GET:{wds[1]}'.encode()# monta mensagem de controle
           self.udp_socket.sendto(msg, self.dest)# envia mensagem udp
 
       elif command == self.cmd['listusers']:# caso o usuario tenha digitado '/list {...}'
-        msg = 'LIST'.encode()# converte para o padrao do protocolo utilizado
+        msg = 'LIST'.encode()# monta mensagem de controle
         self.udp_socket.sendto(msg, self.dest)# envia para o servidor pelo socket udp
       
       elif msg[0] != '/':
-        msg = f'MSG:{msg}'.encode()# converte para o padrao do protocolo utilizado
+        msg = f'MSG:{msg}'.encode()# monta mensagem de controle
         self.udp_socket.sendto(msg, self.dest)# envia para o servidor pelo socket udp
 
       while True:
@@ -81,11 +73,24 @@ class Client:
     self.online = False
     self.udp_socket.close()
 
+  def send_file(self, filename, file):
+    self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# criacao do socket p/ envio de arquivos
+    self.tcp_socket.connect(self.dest)
+
+    self.tcp_socket.send(f'{filename}\n'.encode())# pelo socket tcp, envia primeiramente o nome do arquivo seguido por \n
+   
+    l = file.read(1024)# le parte do arquivo
+    while (l):# ate acabar o arquivo
+      self.tcp_socket.send(l)# envia
+      l = file.read(1024)# le outra parte do arquivo
+
+    self.tcp_socket.close()
+
 def main():
   host = '127.0.0.1'
   port = 2000
   c1 = Client()# inicia o cliente, configurando seu nome
-  c1.enter_chat(host, port)# conecta o
+  c1.enter_chat(host, port)
   
 if __name__ == '__main__':
   main()
