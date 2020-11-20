@@ -99,7 +99,7 @@ class Server:
           con.send(l)# envia
           l = f.read(1024)# le outra parte do arquivo
         print('--> Arquivo enviado')
-    else: con.send(f'ERRO:Arquivo "{filename}" inexistente\n'.encode())
+    else: con.send(f'ERRO\tArquivo "{filename}" inexistente\n'.encode())
     
     con.close()
 

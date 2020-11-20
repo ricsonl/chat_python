@@ -102,7 +102,7 @@ class Client:
         break   
       st += c
 
-    wds = st.split(':')
+    wds = st.split('\t')
     if len(wds) > 1 and wds[0] == 'ERRO':# verifica se o servidor retornou um erro
       print(wds[1])
 
